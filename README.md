@@ -79,4 +79,4 @@ This project is licensed under the GNU General Public License v3.0 - see the LIC
 
 ## Acknowledgments
 
-This project is based on the rpi-vidlooper project and adapted for the Englewood Little Cinema installation.
+This project is based on the rpi-vidlooper project and East Van Vodville mini theater. It was adapted for the Englewood Little Cinema installation.
