@@ -162,11 +162,11 @@ class VideoPlayer(object):
                 self._kill_process()
                 
                 # Start the new video
-                cmd = ['omxplayer']
+                cmd = ['vlc', '--fullscreen', '--no-video-title-show']
                 if self.audio == 'hdmi':
-                    cmd.append('--adev hdmi')
+                    cmd.extend(['--aout=alsa', '--alsa-audio-device=hw:0,0'])
                 elif self.audio == 'local':
-                    cmd.append('--adev local')
+                    cmd.extend(['--aout=alsa', '--alsa-audio-device=hw:1,0'])
                 if self.no_osd:
                     cmd.append('--no-osd')
                 cmd.append(filename)
@@ -276,28 +276,26 @@ class VideoPlayer(object):
         self._kill_process()
 
         # Kill any active splash screen
-        if self._splashproc:
+        if self._splashproc is not None:
+            # Kill the splash screen
             os.killpg(os.getpgid(self._splashproc.pid), signal.SIGKILL)
 
 def main():
     parser = argparse.ArgumentParser(
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        description="""Englewood Little Cinema - Raspberry Pi Video Player
+        description="""
+A script to turn a Raspberry Pi into a dedicated video player. The script
+waits for a button press on a GPIO pin to start playing a video. The videos
+are played in sequence from a directory. After each video, the script waits
+for the next button press.
 
-This program is designed to power a looping video display, where the active
-video can be changed by pressing a button (i.e. by shorting a GPIO pin).
-The active video can optionally be indicated by an LED (one output for each
-input pin; works well with switches with built-in LEDs, but separate LEDs work
-too).
-
-This video player uses omxplayer, a hardware-accelerated video player for the
-Raspberry Pi, which must be installed separately.
-"""
+This video player uses vlc, a hardware-accelerated video player for the
+Raspberry Pi.
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument('--audio', default='hdmi',
-                      choices=('hdmi', 'local', 'both'),
-                      help='Output audio over HDMI, local (headphone jack),'
-                           'or both')
+    parser.add_argument('-a', '--audio',
+                        default='hdmi',
+                        help='Audio output device (hdmi, local, or both)')
     parser.add_argument('--no-autostart', action='store_false',
                       dest='autostart', default=True,
                       help='Don\'t start playing a video on startup')

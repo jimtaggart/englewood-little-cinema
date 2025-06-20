@@ -240,27 +240,29 @@ class VidLooper(object):
                 # Start a new video player process, capture STDOUT to keep the
                 # screen clear. Set a session ID (os.setsid) to allow us to kill
                 # the whole video player process tree.
-                cmd = ['omxplayer','--win', '120,25,590,530', '--orientation', '180', '-b', '--aspect-mode', 'stretch',  '-o', self.audio]
+                cmd = ['vlc', '--no-video-title-show', '--video-x=120', '--video-y=25', '--width=470', '--height=505', '--transform-type=180']
+                if self.audio == 'hdmi':
+                    cmd.extend(['--aout=alsa', '--alsa-audio-device=hw:0,0'])
+                elif self.audio == 'local':
+                    cmd.extend(['--aout=alsa', '--alsa-audio-device=hw:1,0'])
+
                 if self.loop:
-                        cmd += ['--loop']
+                        cmd.append('--loop')
                 if self.no_osd:
-                        cmd += ['--no-osd']
+                        cmd.append('--no-osd')
 
                 self._p = Popen(cmd + [filename],
                             stdout=None if self.debug else PIPE,
+                            stderr=None if self.debug else PIPE,
                             preexec_fn=os.setsid)
                 self._active_vid = filename
-
                 if lightsdown:
-                    for p in range(lmax,lmin,-1):
+                    for p in range (lmax, lmin, -1):
                         pi.set_PWM_dutycycle(lpin, p)
                         time.sleep(0.013)
-                    lightsdown  = 0
-                    #Spread the dimming over 3, seconds to give the screen time to wake up
-            if logflag == 1:
-                t = threading.Thread(target=log_button)
-                threads.append(t)
-                t.start()
+                if logflag > 0:
+                    t = threading.Thread(target=self.log_button)
+                    t.start()
 
         os.system('clear')
         print ("\033c")
@@ -380,8 +382,8 @@ The active video can optionally be indicated by an LED (one output for each
 input pin; works well with switches with built-in LEDs, but separate LEDs work
 too).
 
-This video player uses omxplayer, a hardware-accelerated video player for the
-Raspberry Pi, which must be installed separately.
+This video player uses vlc, a hardware-accelerated video player for the
+Raspberry Pi.
 """
     )
     parser.add_argument('--audio', default='hdmi',
