@@ -16,7 +16,7 @@ A Raspberry Pi-based video player for the Englewood Little Cinema installation. 
 ## Requirements
 
 - Raspberry Pi (tested on Raspberry Pi 4)
-- omxplayer (hardware-accelerated video player)
+- vlc (hardware-accelerated video player)
 - Python 3.x
 - Required Python packages:
   - RPi.GPIO
@@ -27,7 +27,7 @@ A Raspberry Pi-based video player for the Englewood Little Cinema installation. 
 1. Install the required system packages:
 ```bash
 sudo apt-get update
-sudo apt-get install omxplayer python3-pip python3-rpi.gpio
+sudo apt-get install vlc python3-pip python3-rpi.gpio
 ```
 
 2. Install the required Python packages:
@@ -37,7 +37,7 @@ pip3 install pigpio
 
 3. Clone this repository:
 ```bash
-git clone [repository-url]
+git clone https://github.com/jimtaggart/englewood-little-cinema.git
 cd englewood-little-cinema
 ```
 
