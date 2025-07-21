@@ -232,9 +232,14 @@ class VideoPlayer(object):
 
         # Enable event detection on each input pin
         for pin in self.in_pins:
-            print(f"[DEBUG] Adding event detect to pin {pin}")
-            GPIO.add_event_detect(pin, GPIO.FALLING, callback=self.switch_vid,
+            try:
+                print(f"[DEBUG] Removing any existing event detect from pin {pin}")
+                GPIO.remove_event_detect(pin)
+                print(f"[DEBUG] Adding event detect to pin {pin}")
+                GPIO.add_event_detect(pin, GPIO.FALLING, callback=self.switch_vid,
                                 bouncetime=self._GPIO_BOUNCE_TIME)
+            except Exception as e:
+                print(f"[ERROR] Failed to add event detect to pin {pin}: {e}")
 
         # Loop forever
         try:
