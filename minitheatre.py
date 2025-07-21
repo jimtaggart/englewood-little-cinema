@@ -212,7 +212,7 @@ class VideoPlayer(object):
             os.system("vcgencmd display_power 0")
 
         for in_pin, out_pin in self.gpio_pins.items():
-            GPIO.setup(in_pin, GPIO.IN, pull_up_down=GPIO.PUD_OFF)
+            GPIO.setup(in_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
         # Set up the shutdown pin
         if self.shutdown_pin:
@@ -232,6 +232,7 @@ class VideoPlayer(object):
 
         # Enable event detection on each input pin
         for pin in self.in_pins:
+            print(f"[DEBUG] Adding event detect to pin {pin}")
             GPIO.add_event_detect(pin, GPIO.FALLING, callback=self.switch_vid,
                                 bouncetime=self._GPIO_BOUNCE_TIME)
 
