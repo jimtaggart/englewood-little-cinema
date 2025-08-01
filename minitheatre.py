@@ -235,7 +235,16 @@ class VideoPlayer(object):
             os.system('tput civis')
 
         # Set up GPIO
-        GPIO.setmode(GPIO.BCM)
+        try:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)  # Disable warnings for Pi 5
+        except Exception as e:
+            print(f"[ERROR] GPIO setup failed: {e}")
+            if self.debug:
+                print("Continuing in debug mode without GPIO...")
+                return
+            else:
+                raise e
 
         # Set up PWM for house lights
         if not self.debug:  # Skip PWM setup if in debug mode
@@ -248,15 +257,30 @@ class VideoPlayer(object):
             os.system("vcgencmd display_power 0")
 
         for in_pin, out_pin in self.gpio_pins.items():
-            GPIO.setup(in_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            try:
+                GPIO.setup(in_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+            except Exception as e:
+                print(f"[ERROR] Failed to setup GPIO pin {in_pin}: {e}")
+                if self.debug:
+                    print("Continuing in debug mode without GPIO pins...")
+                    return
+                else:
+                    raise e
 
         # Set up the shutdown pin
         if self.shutdown_pin:
-            GPIO.setup(self.shutdown_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-            GPIO.add_event_detect(self.shutdown_pin,
-                                GPIO.FALLING,
-                                callback=lambda _: call(['shutdown', '-h', 'now'], shell=False),
-                                bouncetime=self._GPIO_BOUNCE_TIME)
+            try:
+                GPIO.setup(self.shutdown_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.add_event_detect(self.shutdown_pin,
+                                    GPIO.FALLING,
+                                    callback=lambda _: call(['shutdown', '-h', 'now'], shell=False),
+                                    bouncetime=self._GPIO_BOUNCE_TIME)
+            except Exception as e:
+                print(f"[ERROR] Failed to setup shutdown pin {self.shutdown_pin}: {e}")
+                if self.debug:
+                    print("Continuing in debug mode without shutdown pin...")
+                else:
+                    raise e
 
         if self.autostart:
             if self.splash is not None:
@@ -267,6 +291,7 @@ class VideoPlayer(object):
                 self.switch_vid(self.in_pins[0])
 
         # Enable event detection on each input pin
+        gpio_working = True
         for pin in self.in_pins:
             try:
                 print(f"[DEBUG] Removing any existing event detect from pin {pin}")
@@ -276,6 +301,23 @@ class VideoPlayer(object):
                                 bouncetime=self._GPIO_BOUNCE_TIME)
             except Exception as e:
                 print(f"[ERROR] Failed to add event detect to pin {pin}: {e}")
+                gpio_working = False
+                if self.debug:
+                    print("GPIO event detection failed, continuing in debug mode...")
+                    break
+                else:
+                    raise e
+
+        if not gpio_working and self.debug:
+            print("[DEBUG] Running in GPIO-free debug mode. Press Ctrl+C to exit.")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                pass
+            finally:
+                self.__del__()
+            return
 
         # Loop forever
         try:
