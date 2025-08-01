@@ -194,12 +194,14 @@ class VideoPlayer(object):
 
                 # Dim the house lights
                 for p in range(LIGHT_MAX, LIGHT_MIN, -1):
-                    if USE_LGPIO:
-                        # Scale duty cycle from 0-255 to 0-1000000 for lgpio
-                        duty_cycle = int((p / 255.0) * 1000000)
-                        lgpio.tx_pwm(h, LIGHT_PIN, 1000, duty_cycle)  # frequency, duty_cycle
-                    else:
-                        pi.set_PWM_dutycycle(LIGHT_PIN, p)
+                    if not self.debug:  # Skip PWM if in debug mode
+                        if USE_LGPIO:
+                            # Scale duty cycle from 0-255 to 0-1000000 for lgpio
+                            duty_cycle = int((p / 255.0) * 1000000)
+                            print(f"[DEBUG] PWM: p={p}, duty_cycle={duty_cycle}")
+                            lgpio.tx_pwm(h, LIGHT_PIN, 1000, duty_cycle)  # frequency, duty_cycle
+                        else:
+                            pi.set_PWM_dutycycle(LIGHT_PIN, p)
                     time.sleep(0.013)
 
     @property
@@ -212,7 +214,7 @@ class VideoPlayer(object):
         global state
 
         # Fade in the house lights
-        if not state:
+        if not state and not self.debug:
             for p in range(LIGHT_MIN, LIGHT_MAX):
                 if USE_LGPIO:
                     # Scale duty cycle from 0-255 to 0-1000000 for lgpio
@@ -236,10 +238,11 @@ class VideoPlayer(object):
         GPIO.setmode(GPIO.BCM)
 
         # Set up PWM for house lights
-        if USE_LGPIO:
-            lgpio.gpio_claim_output(h, LIGHT_PIN)
-        else:
-            pi.set_PWM_frequency(LIGHT_PIN, 1000)  # 1kHz frequency
+        if not self.debug:  # Skip PWM setup if in debug mode
+            if USE_LGPIO:
+                lgpio.gpio_claim_output(h, LIGHT_PIN)
+            else:
+                pi.set_PWM_frequency(LIGHT_PIN, 1000)  # 1kHz frequency
 
         if screen_toggle:  # turn off the screen after boot
             os.system("vcgencmd display_power 0")
@@ -294,14 +297,15 @@ class VideoPlayer(object):
                                 os.system('clear')
                                 print("\033c")
                                 # Bring up the house lights
-                                for p in range(LIGHT_MIN, LIGHT_MAX, 1):
-                                    if USE_LGPIO:
-                                        # Scale duty cycle from 0-255 to 0-1000000 for lgpio
-                                        duty_cycle = int((p / 255.0) * 1000000)
-                                        lgpio.tx_pwm(h, LIGHT_PIN, 1000, duty_cycle)  # frequency, duty_cycle
-                                    else:
-                                        pi.set_PWM_dutycycle(LIGHT_PIN, p)
-                                    time.sleep(0.013)
+                                if not self.debug:  # Skip PWM if in debug mode
+                                    for p in range(LIGHT_MIN, LIGHT_MAX, 1):
+                                        if USE_LGPIO:
+                                            # Scale duty cycle from 0-255 to 0-1000000 for lgpio
+                                            duty_cycle = int((p / 255.0) * 1000000)
+                                            lgpio.tx_pwm(h, LIGHT_PIN, 1000, duty_cycle)  # frequency, duty_cycle
+                                        else:
+                                            pi.set_PWM_dutycycle(LIGHT_PIN, p)
+                                        time.sleep(0.013)
 
         except KeyboardInterrupt:
             pass
