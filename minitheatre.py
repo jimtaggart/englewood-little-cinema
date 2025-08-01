@@ -195,7 +195,7 @@ class VideoPlayer(object):
                 # Dim the house lights
                 for p in range(LIGHT_MAX, LIGHT_MIN, -1):
                     if USE_LGPIO:
-                        lgpio.pwm_set_dutycycle(h, LIGHT_PIN, p)
+                        lgpio.tx_pwm(h, LIGHT_PIN, 1000, p)  # frequency, duty_cycle
                     else:
                         pi.set_PWM_dutycycle(LIGHT_PIN, p)
                     time.sleep(0.013)
@@ -213,7 +213,7 @@ class VideoPlayer(object):
         if not state:
             for p in range(LIGHT_MIN, LIGHT_MAX):
                 if USE_LGPIO:
-                    lgpio.pwm_set_dutycycle(h, LIGHT_PIN, p)
+                    lgpio.tx_pwm(h, LIGHT_PIN, 1000, p)  # frequency, duty_cycle
                 else:
                     pi.set_PWM_dutycycle(LIGHT_PIN, p)
                 time.sleep(0.013)
@@ -234,7 +234,6 @@ class VideoPlayer(object):
         # Set up PWM for house lights
         if USE_LGPIO:
             lgpio.gpio_claim_output(h, LIGHT_PIN)
-            lgpio.tx_pwm(h, LIGHT_PIN, 1000, 0)  # 1kHz frequency, 0% duty cycle
         else:
             pi.set_PWM_frequency(LIGHT_PIN, 1000)  # 1kHz frequency
 
@@ -293,7 +292,7 @@ class VideoPlayer(object):
                                 # Bring up the house lights
                                 for p in range(LIGHT_MIN, LIGHT_MAX, 1):
                                     if USE_LGPIO:
-                                        lgpio.pwm_set_dutycycle(h, LIGHT_PIN, p)
+                                        lgpio.tx_pwm(h, LIGHT_PIN, 1000, p)  # frequency, duty_cycle
                                     else:
                                         pi.set_PWM_dutycycle(LIGHT_PIN, p)
                                     time.sleep(0.013)
