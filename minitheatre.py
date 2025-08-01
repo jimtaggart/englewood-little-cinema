@@ -32,10 +32,27 @@ import time
 from threading import Lock
 import signal
 import argparse
-import pigpio
 
-# Initialize pigpio for PWM control
-pi = pigpio.pi()
+# Try to import lgpio first (Pi 5), fall back to pigpio (Pi 4)
+try:
+    import lgpio
+    USE_LGPIO = True
+    print("Using lgpio for Raspberry Pi 5")
+except ImportError:
+    try:
+        import pigpio
+        USE_LGPIO = False
+        print("Using pigpio for Raspberry Pi 4")
+    except ImportError:
+        print("Error: Neither lgpio nor pigpio is available. Please install one of them.")
+        sys.exit(1)
+
+# Initialize GPIO library for PWM control
+if USE_LGPIO:
+    h = lgpio.gpiochip_open(0)
+else:
+    pi = pigpio.pi()
+
 lastpress = time.time()
 
 # House lights control (12v mosfet)
@@ -177,7 +194,10 @@ class VideoPlayer(object):
 
                 # Dim the house lights
                 for p in range(LIGHT_MAX, LIGHT_MIN, -1):
-                    pi.set_PWM_dutycycle(LIGHT_PIN, p)
+                    if USE_LGPIO:
+                        lgpio.pwm_set_dutycycle(h, LIGHT_PIN, p)
+                    else:
+                        pi.set_PWM_dutycycle(LIGHT_PIN, p)
                     time.sleep(0.013)
 
     @property
@@ -186,13 +206,16 @@ class VideoPlayer(object):
         return tuple(self.gpio_pins.keys())
 
     def start(self):
-        global pi
+        global h
         global state
 
         # Fade in the house lights
         if not state:
             for p in range(LIGHT_MIN, LIGHT_MAX):
-                pi.set_PWM_dutycycle(LIGHT_PIN, p)
+                if USE_LGPIO:
+                    lgpio.pwm_set_dutycycle(h, LIGHT_PIN, p)
+                else:
+                    pi.set_PWM_dutycycle(LIGHT_PIN, p)
                 time.sleep(0.013)
 
         # Clear the screen on startup
@@ -207,6 +230,13 @@ class VideoPlayer(object):
 
         # Set up GPIO
         GPIO.setmode(GPIO.BCM)
+
+        # Set up PWM for house lights
+        if USE_LGPIO:
+            lgpio.gpio_claim_output(h, LIGHT_PIN)
+            lgpio.tx_pwm(h, LIGHT_PIN, 1000, 0)  # 1kHz frequency, 0% duty cycle
+        else:
+            pi.set_PWM_frequency(LIGHT_PIN, 1000)  # 1kHz frequency
 
         if screen_toggle:  # turn off the screen after boot
             os.system("vcgencmd display_power 0")
@@ -262,7 +292,10 @@ class VideoPlayer(object):
                                 print("\033c")
                                 # Bring up the house lights
                                 for p in range(LIGHT_MIN, LIGHT_MAX, 1):
-                                    pi.set_PWM_dutycycle(LIGHT_PIN, p)
+                                    if USE_LGPIO:
+                                        lgpio.pwm_set_dutycycle(h, LIGHT_PIN, p)
+                                    else:
+                                        pi.set_PWM_dutycycle(LIGHT_PIN, p)
                                     time.sleep(0.013)
 
         except KeyboardInterrupt:
@@ -277,6 +310,15 @@ class VideoPlayer(object):
 
         # Cleanup the GPIO pins (reset them)
         GPIO.cleanup()
+
+        # Cleanup GPIO library
+        try:
+            if USE_LGPIO:
+                lgpio.gpiochip_close(h)
+            else:
+                pi.stop()
+        except:
+            pass
 
         # Kill any active video process
         self._kill_process()

@@ -15,12 +15,12 @@ A Raspberry Pi-based video player for the Englewood Little Cinema installation. 
 
 ## Requirements
 
-- Raspberry Pi (tested on Raspberry Pi 4)
+- Raspberry Pi (tested on Raspberry Pi 4 and Pi 5)
 - vlc (hardware-accelerated video player)
 - Python 3.x
 - Required Python packages:
   - RPi.GPIO
-  - pigpio
+  - lgpio (for Pi 5) or pigpio (for Pi 4)
 
 ## Installation
 
@@ -32,6 +32,10 @@ sudo apt-get install vlc python3-pip python3-rpi.gpio
 
 2. Install the required Python packages:
 ```bash
+# For Raspberry Pi 5
+sudo apt-get install python3-lgpio
+
+# For Raspberry Pi 4 (if using pigpio)
 pip3 install pigpio
 ```
 
